@@ -1,33 +1,23 @@
-
-// External library imports
 import { Request, Response, NextFunction } from "express";
+import { getAuth } from "firebase-admin/auth";
 
-// Internal module imports
-import { auth } from "../../../../config/firebaseConfig";
-import { successResponse } from "../models/responseModel";
-
-const OK: number = 200;
+const auth = getAuth();
 
 /**
- * Handles setting custom claims for a user.
- * @param {Request} req - The request object.
- * @param {Response} res - The response object.
- * @param {NextFunction} next - The next middleware function.
- * @returns {Promise<void>}
+ * Set custom claims for a user (assign roles).
  */
-export const setCustomClaims = async (
-    req: Request,
-    res: Response,
-    next: NextFunction
-): Promise<void> => {
-    const { uid, claims } = req.body;
-
+export const setCustomClaims = async (req: Request, res: Response, next: NextFunction) => {
     try {
-        await auth.setCustomUserClaims(uid, claims);
-        res.status(OK).send(
-            successResponse({}, `Custom claims set for user: ${uid}`)
-        );
+        const { uid, role } = req.body;
+
+        if (!uid || !role) {
+            return res.status(400).json({ message: "User ID and role are required." });
+        }
+
+        await auth.setCustomUserClaims(uid, { role });
+
+        return res.status(200).json({ message: `Role ${role} assigned to user ${uid}.` });
     } catch (error) {
-        next(error);
+        next(error); // ✅ Ensure errors are passed to Express error handler
     }
 };
